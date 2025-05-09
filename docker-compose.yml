@@ -10,5 +10,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: sdsqkqh!
+    command: ["--noauth"]  # 인증 비활성화
 volumes:
   mongo_data:
