@@ -1,6 +1,20 @@
 version: "3.8"
 services:
-  mongo:
+  backend: # 배포용용
+    build: .
+    container_name: yeogigangwon-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: npm run start
+
+  mongo: #
     image: mongo:5.0
     container_name: yeogigangwon-mongo
     ports:
@@ -10,6 +24,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: sdsqkqh!
-    command: ["--noauth"]  # 인증 비활성화
+
 volumes:
   mongo_data:
