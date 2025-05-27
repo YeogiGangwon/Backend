@@ -1,12 +1,15 @@
-const { fetchShortTermForecast } = require('../services/weatherService');
+const { fetchShortTermForecast, fetchWarningStatus } = require('../services/weatherService');
+const analyzeWeather = require('../services/weatherAnalyzer');
 
-exports.getTodayWeather = async (req, res) => {
+exports.getWeatherDecision = async (req, res) => {
   const { lat, lon } = req.query;
   try {
-    const data = await fetchShortTermForecast(lat, lon);
-    res.status(200).json({ data });
+    const forecast = await fetchShortTermForecast(lat, lon);
+    const warning = await fetchWarningStatus();
+    const result = analyzeWeather({ forecast, warning });
+    res.status(200).json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: '날씨 조회 실패' });
+    res.status(500).json({ message: '날씨 데이터 조회 실패' });
   }
 };
