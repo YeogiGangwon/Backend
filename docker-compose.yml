@@ -1,6 +1,20 @@
 version: "3.8"
 services:
-  mongo:
+  backend: # 배포용용
+    build: .
+    container_name: yeogigangwon-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: npm run start
+
+  mongo: #
     image: mongo:5.0
     container_name: yeogigangwon-mongo
     ports:
@@ -19,17 +33,6 @@ services:
         - "8000:8000"
       depends_on:
         - mongo
-    
-    node-backend:
-      build: ./node-backend
-      container_name: yeogigangwon-node-backend
-      ports:
-        - "3000:3000"
-      depends_on:
-        - python-api
-        - mongo
-      environment:
-        MONGO_URI: mongodb://mongo:27017/congestion
 
 volumes:
   mongo_data:
