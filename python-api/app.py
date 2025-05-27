@@ -1,10 +1,7 @@
 # python-api/app.py
 
-# ───────────────────────────────────────────────────
-# Windows에서 pathlib PosixPath 에러 우회
 import pathlib
 pathlib.PosixPath = pathlib.WindowsPath
-# ───────────────────────────────────────────────────
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,14 +13,14 @@ import torch
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],    # 필요 시 도메인 제한
+    allow_origins=["*"],    
     allow_methods=["POST"],
     allow_headers=["*"],
 )
 
 # 사전 로드된 YOLOv5 모델
 model = torch.hub.load(
-    'ultralytics/yolov5',      # 또는 './yolov5' 로 로컬 복사본 사용
+    'ultralytics/yolov5',      
     'custom',
     path='runs/train/cctv_person/weights/best.pt',
     force_reload=False
@@ -48,5 +45,4 @@ async def congestion(file: UploadFile = File(...)):
     return {"person_count": person_count}
 
 if __name__ == "__main__":
-    # 로컬 테스트 용
     uvicorn.run(app, host="0.0.0.0", port=8000)
