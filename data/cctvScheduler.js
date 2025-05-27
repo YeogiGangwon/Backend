@@ -1,9 +1,16 @@
-// /data/cctvScheduler.js
-const cron = require('node-cron');
-const { fetchAndSaveCCTVImages } = require('./cctvWorker');
+const cron      = require('node-cron');
+const cctvWorker = require('./cctvWorker');
 
-// 매 10분마다 실행 (원하면 5분도 가능)
-cron.schedule('*/10 * * * *', () => {
-  console.log('[🕒] CCTV 이미지 수집 시작');
-  fetchAndSaveCCTVImages();
+// 10분마다 전체 CCTV 수집
+cron.schedule('*/10 * * * *', async () => {
+  console.log(`[Scheduler] ${new Date().toISOString()} - 수집 시작`);
+  try {
+    const results = await cctvWorker.collectAll();
+    // personCount 기준 내림차순 정렬
+    results.sort((a, b) => b.personCount - a.personCount);
+    console.log(`[Scheduler] 완료:\n`, results);
+    // TODO: DB 저장 또는 API 전송
+  } catch (err) {
+    console.error('[Scheduler] 에러:', err);
+  }
 });

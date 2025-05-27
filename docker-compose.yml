@@ -11,5 +11,25 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: sdsqkqh!
     command: ["--noauth"]  # 인증 비활성화
+
+    python-api:
+      build: ./python-api
+      container_name: yeogigangwon-python-api
+      ports:
+        - "8000:8000"
+      depends_on:
+        - mongo
+    
+    node-backend:
+      build: ./node-backend
+      container_name: yeogigangwon-node-backend
+      ports:
+        - "3000:3000"
+      depends_on:
+        - python-api
+        - mongo
+      environment:
+        MONGO_URI: mongodb://mongo:27017/congestion
+
 volumes:
   mongo_data:
