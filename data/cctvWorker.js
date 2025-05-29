@@ -1,7 +1,9 @@
-const axios = require('axios');
-const fs    = require('fs');
-const path  = require('path');
-const cctvList = require('./cctvList');
+// backend/data/cctvWorker.js
+const axios       = require('axios');
+const fs          = require('fs');
+const path        = require('path');
+const cctvList    = require('./cctvList');
+const Congestion  = require('../models/congestion.model');
 
 // 히스토리 JSON 저장 디렉토리
 const HIST_DIR = path.join(__dirname, 'history');
@@ -11,13 +13,12 @@ if (!fs.existsSync(HIST_DIR)) fs.mkdirSync(HIST_DIR);
 function quantile(arr, q) {
   if (!arr.length) return 0;
   const sorted = [...arr].sort((a,b)=>a-b);
-  const pos = (sorted.length - 1) * q;
-  const base = Math.floor(pos);
-  const rest = pos - base;
-  if (sorted[base+1] !== undefined) {
-    return sorted[base] + rest * (sorted[base+1] - sorted[base]);
-  }
-  return sorted[base];
+  const pos    = (sorted.length - 1) * q;
+  const base   = Math.floor(pos);
+  const rest   = pos - base;
+  return sorted[base + 1] !== undefined
+    ? sorted[base] + rest * (sorted[base+1] - sorted[base])
+    : sorted[base];
 }
 
 // 유틸: 히스토리 로드/저장
@@ -36,8 +37,9 @@ function saveHistory(id, arr) {
 // 단일 CCTV 처리
 async function analyzeCamera(cam) {
   const now = new Date();
+
   // 1) 이미지 다운로드
-  const resp = await axios.get(cam.url, { responseType: 'arraybuffer' });
+  const resp   = await axios.get(cam.url, { responseType: 'arraybuffer' });
   const imgBuf = resp.data;
 
   // 2) Python API 호출 (YOLOv5 추론)
@@ -48,7 +50,7 @@ async function analyzeCamera(cam) {
   );
   const personCount = data.person_count || 0;
 
-  // 3) 히스토리에 추가
+  // 3) 히스토리 업데이트
   const hist = loadHistory(cam.id);
   hist.push(personCount);
   saveHistory(cam.id, hist);
@@ -60,19 +62,34 @@ async function analyzeCamera(cam) {
 
   // 5) 레벨 분류
   let level;
-  if (personCount <= q1)        level = 'Low';
-  else if (personCount <= q2)   level = 'Moderate';
-  else if (personCount <= q3)   level = 'Crowded';
-  else                           level = 'Very Crowded';
+  if      (personCount <= q1)      level = 'Low';
+  else if (personCount <= q2)      level = 'Moderate';
+  else if (personCount <= q3)      level = 'Crowded';
+  else                              level = 'Very Crowded';
 
+  // 6) 점수 계산 (0~100)
+  const score = Math.min(100, Math.round((personCount / (q3 || 1)) * 100));
+
+  // 7) **DB 저장**
+  await Congestion.create({
+    cameraId:    cam.id,
+    timestamp:   now,
+    personCount,
+    thresholds:  [q1, q2, q3],
+    score,
+    level
+  });
+
+  // 8) 결과 반환
   return {
     id:          cam.id,
     name:        cam.name,
     location:    cam.location,
-    personCount,      // 최신 인원 수
-    thresholds: [q1, q2, q3],
+    personCount,
+    thresholds:  [q1, q2, q3],
+    score,
     level,
-    timestamp: now.toISOString()
+    timestamp:   now.toISOString()
   };
 }
 
