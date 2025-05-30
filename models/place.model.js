@@ -9,7 +9,8 @@ const placeSchema = new mongoose.Schema({
   longitude: Number,
   image_url: String,
   open_hours: String,
-  fee_info: String
+  fee_info: String,
+  indoor: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Place', placeSchema);
