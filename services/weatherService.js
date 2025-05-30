@@ -30,38 +30,64 @@ const calculateBaseTime = (now) => {
 
 // 단기예보 (1~2일)
 exports.fetchShortTermForecast = async (lat, lon) => {
-  const { x, y } = latLonToGrid(lat, lon);
-  const now = new Date();
-  const { baseDate, baseTime } = calculateBaseTime(now);
-  const url = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
+  try {
+    const { x, y } = latLonToGrid(lat, lon);
+    const now = new Date();
+    const { baseDate, baseTime } = calculateBaseTime(now);
+    const url = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
 
-  const res = await axios.get(url, {
-    params: {
-      serviceKey: process.env.KMA_SHORT_KEY,
-      dataType: 'JSON',
-      numOfRows: 1000,
-      pageNo: 1,
-      base_date: baseDate,
-      base_time: baseTime,
-      nx: x,
-      ny: y,
+    console.log('API 요청 정보:', {
+      baseDate,
+      baseTime,
+      x,
+      y,
+      serviceKey: process.env.KMA_SHORT_KEY?.substring(0, 10) + '...' // API 키 일부만 로깅
+    });
+
+    const res = await axios.get(url, {
+      params: {
+        serviceKey: decodeURIComponent(process.env.KMA_SHORT_KEY), // URL 디코딩된 키 사용
+        dataType: 'JSON',
+        numOfRows: 1000,
+        pageNo: 1,
+        base_date: baseDate,
+        base_time: baseTime,
+        nx: x,
+        ny: y,
+      }
+    });
+
+    if (!res.data.response?.body?.items?.item) {
+      console.error('API 응답:', res.data);
+      throw new Error('날씨 API 응답 형식이 올바르지 않습니다.');
     }
-  });
-  return res.data.response.body.items.item;
+
+    return res.data.response.body.items.item;
+  } catch (error) {
+    console.error('단기예보 API 에러:', error.response?.data || error.message);
+    throw new Error('단기예보 조회 중 오류가 발생했습니다.');
+  }
 };
 
 // 기상특보
 exports.fetchWarningStatus = async () => {
-  const url = 'https://apis.data.go.kr/1360000/WthrWrnInfoService/getWthrWarningList';
+  const url = 'https://apis.data.go.kr/1360000/WthrWrnInfoService/getWthrWrnList';
   const res = await axios.get(url, {
     params: {
       serviceKey: process.env.KMA_WARNING_KEY,
       dataType: 'JSON',
       numOfRows: 100,
       pageNo: 1,
+      stnId: 108 // 강원도 지역 코드
     }
   });
-  return res.data.response.body.items.item;
+  
+  if (!res.data.response?.body?.items?.item) {
+    return []; // 기상특보가 없는 경우 빈 배열 반환
+  }
+  return Array.isArray(res.data.response.body.items.item) 
+    ? res.data.response.body.items.item 
+    : [res.data.response.body.items.item];
 };
 
 // 중기예보 (3~10일)
@@ -97,5 +123,61 @@ exports.fetchMidTermForecast = async (regionCode) => {
   return {
     temperature: tempRes.data.response.body.items.item,
     weather: landRes.data.response.body.items.item
+  };
+};
+
+// 날씨 분석
+exports.analyzeWeather = ({ forecast, warning }) => {
+  // 기상특보 확인
+  if (warning && warning.length > 0) {
+    const gangwonWarnings = warning.filter(w => 
+      w.areaName.includes('강원') && 
+      (w.warningType.includes('태풍') || 
+       w.warningType.includes('풍랑') ||
+       w.warningType.includes('호우'))
+    );
+    
+    if (gangwonWarnings.length > 0) {
+      return {
+        isRecommended: false,
+        message: '현재 강원 지역에 기상특보가 발효 중입니다.',
+        warnings: gangwonWarnings.map(w => w.warningType)
+      };
+    }
+  }
+
+  // 날씨 데이터 분석
+  const currentWeather = forecast.reduce((acc, item) => {
+    acc[item.category] = item.fcstValue;
+    return acc;
+  }, {});
+
+  // 점수 계산
+  let score = 100;
+  
+  // 강수량
+  if (parseFloat(currentWeather.RN1) > 0) {
+    score -= 50;
+  }
+
+  // 하늘상태
+  if (currentWeather.SKY === '4') score -= 20;
+  else if (currentWeather.SKY === '3') score -= 10;
+
+  // 기온
+  const temp = parseInt(currentWeather.TMP);
+  if (temp < 22) score -= 20;
+  if (temp > 35) score -= 15;
+
+  return {
+    isRecommended: score > 60,
+    score,
+    weather: {
+      temperature: `${currentWeather.TMP}°C`,
+      sky: currentWeather.SKY === '1' ? '맑음' : 
+           currentWeather.SKY === '3' ? '구름많음' : '흐림',
+      rain: `${currentWeather.RN1}mm`
+    },
+    message: score > 60 ? '날씨가 좋습니다.' : '날씨가 좋지 않습니다.'
   };
 };

@@ -141,6 +141,7 @@ exports.evaluateLocationWeather = async (lat, lon) => {
       }
     };
   } catch (error) {
+    console.error('날씨 평가 중 오류 발생:', error);
     throw error;
   }
 }; 

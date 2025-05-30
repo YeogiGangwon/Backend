@@ -1,5 +1,4 @@
-const { fetchShortTermForecast, fetchWarningStatus } = require('../services/weatherService');
-const analyzeWeather = require('../services/weatherAnalyzer');
+const { fetchShortTermForecast, fetchWarningStatus, analyzeWeather } = require('../services/weatherService');
 
 exports.getWeatherDecision = async (req, res) => {
   const { lat, lon } = req.query;
