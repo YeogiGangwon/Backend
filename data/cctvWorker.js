@@ -9,6 +9,10 @@ const Congestion  = require('../models/congestion.model');
 const HIST_DIR = path.join(__dirname, 'history');
 if (!fs.existsSync(HIST_DIR)) fs.mkdirSync(HIST_DIR);
 
+// 이미지 저장 디렉토리
+const IMG_DIR = path.join(__dirname, 'images');
+if (!fs.existsSync(IMG_DIR)) fs.mkdirSync(IMG_DIR);
+
 // 유틸: 사분위 계산
 function quantile(arr, q) {
   if (!arr.length) return 0;
@@ -32,6 +36,26 @@ function saveHistory(id, arr) {
     path.join(HIST_DIR, `${id}.json`),
     JSON.stringify(arr.slice(-500))  // 마지막 500개만 보관
   );
+}
+
+// 이미지 저장 함수
+async function saveImage(id, imgBuf, timestamp) {
+  const fileName = `${id}_${timestamp.getTime()}.jpg`;
+  await fs.promises.writeFile(path.join(IMG_DIR, fileName), imgBuf);
+  return fileName;
+}
+
+// 재시도 로직
+const MAX_RETRIES = 3;
+async function retryOperation(operation, retries = MAX_RETRIES) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+    }
+  }
 }
 
 // 단일 CCTV 처리
