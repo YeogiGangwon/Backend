@@ -1,20 +1,21 @@
 version: "3.8"
 services:
-  backend: # 배포용
-    build: .
+  backend:
+    build:
+      context: .
+      dockerfile: docker/node-api/Dockerfile
+      args:
+        - NODE_ENV=production
+    image: yeogigangwon-backend:latest
     container_name: yeogigangwon-backend
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
+    env_file: .env
     depends_on:
       - mongo
-    volumes:
-      - .:/app
-    working_dir: /app
-    command: npm run start
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 
-  mongo: #
+  mongo:
     image: mongo:5.0
     container_name: yeogigangwon-mongo
     ports:
@@ -22,8 +23,43 @@ services:
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: sdsqkqh!
+      MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo_user
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_password
+    secrets:
+      - mongo_user
+      - mongo_password
+    restart: unless-stopped
+
+  python-api:
+    build:
+      context: .
+      dockerfile: docker/python-api/Dockerfile
+    image: yeogigangwon-python-api:latest
+    container_name: yeogigangwon-python-api
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TORCH_HOME=/app/.torch
+      - MODEL_PATH=/models/best.pt
+    ports:
+      - "8000:8000"
+    volumes:
+      - pytorch_cache:/app/.torch
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
 
 volumes:
   mongo_data:
+  pytorch_cache:
+
+secrets:
+  mongo_user:
+    file: ./secrets/mongo_user.txt
+  mongo_password:
+    file: ./secrets/mongo_password.txt
