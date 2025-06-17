@@ -2,6 +2,7 @@
 const axios       = require('axios');
 const fs          = require('fs');
 const path        = require('path');
+const FormData    = require('form-data'); 
 const cctvList    = require('./cctvList');
 const Congestion  = require('../models/congestion.model');
 
@@ -67,10 +68,22 @@ async function analyzeCamera(cam) {
   const imgBuf = resp.data;
 
   // 2) Python API 호출 (YOLOv5 추론)
+  // const { data } = await axios.post(
+  //   'http://localhost:8000/congestion',
+  //   imgBuf,
+  //   { headers: { 'Content-Type': 'application/octet-stream' } }
+  // );
+  // const personCount = data.person_count || 0;
+
+  const form = new FormData();
+  form.append('file', imgBuf, {
+    filename: `${cam.id}.jpg`,
+    contentType: 'image/jpeg'
+  });
   const { data } = await axios.post(
     'http://localhost:8000/congestion',
-    imgBuf,
-    { headers: { 'Content-Type': 'application/octet-stream' } }
+    form,
+    { headers: form.getHeaders() }
   );
   const personCount = data.person_count || 0;
 
