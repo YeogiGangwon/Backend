@@ -14,12 +14,12 @@ exports.addFavorite = async (req, res) => {
 
     res.status(201).json({ message: '즐겨찾기 완료', favorite });
   } catch (err) {
-    console.error('즐겨찾기 등록 실패' ,err);
+    console.error(err);
     res.status(500).json({ message: '즐겨찾기 실패' });
   }
 };
 
-// 즐겨찾기 조회
+// 즐겨찾기 목록 조회
 exports.getFavorites = async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -27,7 +27,7 @@ exports.getFavorites = async (req, res) => {
     const favorites = await Favorite.find({ user_id }).populate('place_id');
     res.status(200).json(favorites);
   } catch (err) {
-    console.error('즐겨찾기 조회 실패', err);
+    console.error(err);
     res.status(500).json({ message: '조회 실패' });
   }
 };
@@ -43,7 +43,7 @@ exports.deleteFavorite = async (req, res) => {
 
     res.status(200).json({ message: '삭제 완료' });
   } catch (err) {
-    console.error('즐겨찾기 삭제 실패' ,err);
+    console.error(err);
     res.status(500).json({ message: '삭제 실패' });
   }
 };

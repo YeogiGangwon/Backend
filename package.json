@@ -3,25 +3,18 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@react-native-community/geolocation": "^3.4.0",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "form-data": "^4.0.3",
-    "fs": "^0.0.1-security",
-    "jimp": "^1.6.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.14.2",
-    "node-cron": "^3.0.3",
-    "path": "^0.12.7"
+    "mongoose": "^8.14.2"
   }
 }
