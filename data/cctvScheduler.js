@@ -9,7 +9,6 @@ cron.schedule('*/10 * * * *', async () => {
     // personCount 기준 내림차순 정렬
     results.sort((a, b) => b.personCount - a.personCount);
     console.log(`[Scheduler] 완료:\n`, results);
-    // TODO: DB 저장 또는 API 전송
   } catch (err) {
     console.error('[Scheduler] 에러:', err);
   }

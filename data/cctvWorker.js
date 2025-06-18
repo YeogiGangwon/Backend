@@ -114,7 +114,7 @@ async function analyzeCamera(cam) {
   } else {
     // q3를 초과하고, 전체 인원도 기준값을 넘었을 때만 'Very Crowded'
     level = 'Very Crowded';
-  }                            level = 'Very Crowded';
+  }                           
 
   // 6) 점수 계산 (0~100)
   const score = Math.min(100, Math.round((personCount / (q3 + 5)) * 100));
