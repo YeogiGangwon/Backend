@@ -9,6 +9,8 @@ services:
     image: yeogigangwon-backend:latest
     container_name: yeogigangwon-backend
     env_file: .env
+    environment:
+      - PYTHON_API_URL=http://python-api:8000/congestion
     depends_on:
       - mongo
     ports:

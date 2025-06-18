@@ -66,7 +66,7 @@ async function analyzeCamera(cam) {
   // 1) 이미지 다운로드
   const resp   = await axios.get(cam.url, { responseType: 'arraybuffer' });
   const imgBuf = resp.data;
-
+  // const imgBuf = fs.readFileSync(path.join(__dirname, '../python-api/test_image.jpg'));
   // 2) Python API 호출 (YOLOv5 추론)
   // const { data } = await axios.post(
   //   'http://localhost:8000/congestion',
@@ -75,15 +75,18 @@ async function analyzeCamera(cam) {
   // );
   // const personCount = data.person_count || 0;
 
+  // 2) Python API 호출 (YOLOv5 추론)
+  // 환경 변수에서 Python API 주소 가져오기 (없을 경우 기본값 사용)
+  const pythonApiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000/congestion';
+
   const form = new FormData();
-  form.append('file', imgBuf, {
-    filename: `${cam.id}.jpg`,
-    contentType: 'image/jpeg'
-  });
+  // 'file'이라는 필드 이름은 Python FastAPI의 `File(...)` 매개변수 이름과 일치해야 합니다.
+  form.append('file', imgBuf, `${cam.id}.jpg`);
+
   const { data } = await axios.post(
-    'http://localhost:8000/congestion',
+    pythonApiUrl, // <--- 2. 하드코딩된 주소를 환경 변수로 교체
     form,
-    { headers: form.getHeaders() }
+    { headers: form.getHeaders() } // form-data 라이브러리가 헤더를 자동으로 생성해줍니다.
   );
   const personCount = data.person_count || 0;
 
@@ -138,7 +141,20 @@ async function collectAll() {
       const res = await analyzeCamera(cam);
       results.push(res);
     } catch (err) {
-      console.error(`[Worker] ${cam.id} 분석 실패:`, err.message);
+      // 상세한 에러 로그를 출력하도록 변경
+      console.error(`[Worker] ${cam.id} 분석 실패`);
+      if (err.response) {
+        // 서버가 상태 코드로 응답한 경우 (4xx, 5xx 에러)
+        console.error('에러 데이터:', err.response.data);
+        console.error('에러 상태 코드:', err.response.status);
+        console.error('요청 URL:', err.config.url); // 어떤 URL에서 에러가 났는지 확인
+      } else if (err.request) {
+        // 요청은 보냈으나 응답을 받지 못한 경우
+        console.error('응답 없음. 요청 정보:', err.request);
+      } else {
+        // 요청 설정 중에 에러가 발생한 경우
+        console.error('요청 설정 에러:', err.message);
+      }
     }
   }
   return results;

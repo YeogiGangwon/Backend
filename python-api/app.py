@@ -47,7 +47,7 @@ app.add_middleware(
 )
 
 # ──────────────── 모델 경로 설정 ─────────────────
-MODEL_PATH = os.getenv('MODEL_PATH', '/models/best.pt')
+MODEL_PATH = os.getenv('MODEL_PATH', '../models/best.pt')
 print(f"모델 경로: {MODEL_PATH}")
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"모델 파일을 찾을 수 없습니다: {MODEL_PATH}")

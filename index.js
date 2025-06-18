@@ -1,6 +1,7 @@
 const app = require('./app');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+require('./data/cctvScheduler');
 
 dotenv.config();
 connectDB();
