@@ -6,6 +6,8 @@ const FormData    = require('form-data');
 const cctvList    = require('./cctvList');
 const Congestion  = require('../models/congestion.model');
 
+const CROWDED_THRESHOLD = 20;
+
 // 히스토리 JSON 저장 디렉토리
 const HIST_DIR = path.join(__dirname, 'history');
 if (!fs.existsSync(HIST_DIR)) fs.mkdirSync(HIST_DIR);
@@ -102,13 +104,20 @@ async function analyzeCamera(cam) {
 
   // 5) 레벨 분류
   let level;
-  if      (personCount <= q1)      level = 'Low';
-  else if (personCount <= q2)      level = 'Moderate';
-  else if (personCount <= q3)      level = 'Crowded';
-  else                              level = 'Very Crowded';
+  if (personCount <= q1) {
+    level = 'Low';
+  } else if (personCount <= q2) {
+    level = 'Moderate';
+  } else if (personCount <= q3 || personCount < CROWDED_THRESHOLD) { 
+    // q3를 초과했더라도, 전체 인원이 기준값(20명) 미만이면 'Crowded'로 유지
+    level = 'Crowded';
+  } else {
+    // q3를 초과하고, 전체 인원도 기준값을 넘었을 때만 'Very Crowded'
+    level = 'Very Crowded';
+  }                            level = 'Very Crowded';
 
   // 6) 점수 계산 (0~100)
-  const score = Math.min(100, Math.round((personCount / (q3 || 1)) * 100));
+  const score = Math.min(100, Math.round((personCount / (q3 + 5)) * 100));
 
   // 7) **DB 저장**
   await Congestion.create({

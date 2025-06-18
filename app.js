@@ -5,6 +5,7 @@ const placeRoutes = require('./routes/place.routes');
 const favoriteRoutes = require('./routes/favorite.routes');
 const weatherRoutes = require('./routes/weather.routes');
 const recommendationRoutes = require('./routes/recommendation.routes');
+const congestionRoutes = require('./routes/congestion.routes');
 
 app.use(express.json());
 app.use('/api/users', userRoutes);
@@ -12,5 +13,6 @@ app.use('/api/places', placeRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/congestion', congestionRoutes);
 
 module.exports = app;

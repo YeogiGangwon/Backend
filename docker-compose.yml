@@ -10,11 +10,14 @@ services:
     container_name: yeogigangwon-backend
     env_file: .env
     environment:
-      - PYTHON_API_URL=http://python-api:8000/congestion
+      # - PYTHON_API_URL=http://python-api:8000/congestion
+      - PYTHON_API_URL=http://localhost:8000/congestion
     depends_on:
       - mongo
     ports:
       - "8080:8080"
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
 
   mongo:
