@@ -66,7 +66,8 @@ try:
         'ultralytics/yolov5',
         'custom',
         path=MODEL_PATH,
-        force_reload=True,
+        # force_reload=True,
+        force_reload=False,
         device='cpu'
     )
 
