@@ -1,5 +1,24 @@
 version: "3.8"
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/node-api/Dockerfile
+      args:
+        - NODE_ENV=production
+    image: yeogigangwon-backend:latest
+    container_name: yeogigangwon-backend
+    env_file: .env
+    environment:
+      - PYTHON_API_URL=http://python-api:8000/congestion
+    depends_on:
+      - mongo
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
   mongo:
     image: mongo:5.0
     container_name: yeogigangwon-mongo
@@ -8,8 +27,43 @@ services:
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: sdsqkqh!
-    command: ["--noauth"]  # 인증 비활성화
+      MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo_user
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_password
+    secrets:
+      - mongo_user
+      - mongo_password
+    restart: unless-stopped
+
+  python-api:
+    build:
+      context: .
+      dockerfile: docker/python-api/Dockerfile
+    image: yeogigangwon-python-api:latest
+    container_name: yeogigangwon-python-api
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TORCH_HOME=/app/.torch
+      - MODEL_PATH=/models/best.pt
+    ports:
+      - "8000:8000"
+    volumes:
+      - pytorch_cache:/app/.torch
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
 volumes:
   mongo_data:
+  pytorch_cache:
+
+secrets:
+  mongo_user:
+    file: ./secrets/mongo_user.txt
+  mongo_password:
+    file: ./secrets/mongo_password.txt

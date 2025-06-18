@@ -1,0 +1,41 @@
+# ─── .dockerignore ────────────────────────────────────
+
+# Git 메타데이터
+.git
+.gitignore
+
+# 환경설정, 로그
+.env
+*.log
+
+# Node, Python 캐시
+node_modules
+npm-debug.log
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+# 이미지 빌드 컨텍스트에 불필요한 대용량 데이터
+yolov5/data/**
+
+# runs 폴더 전체 무시
+**/runs/**
+
+# 단, 이 파일만 다시 포함
+!yolov5/runs/train/cctv_person/weights/best.pt
+
+# Compose·IDE 파일
+docker-compose.yml
+.vscode/
+*.code-workspace
+
+# 테스트·문서
+tests/
+docs/
+
+# 추가된 캐시 최적화 항목
+.pytest_cache
+.coverage
+htmlcov
+.DS_Store
