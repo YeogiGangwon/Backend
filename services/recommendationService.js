@@ -72,6 +72,8 @@ exports.getRankedBeachRecommendations = async () => {
   return recommendations;
 };
 
+// services/recommendationService.js 의 fetchTourApiDetails 함수
+
 async function fetchTourApiDetails(beach) {
   const TOUR_API_KEY = process.env.TOUR_API_KEY;
   const KOR_SERVICE_URL = 'http://apis.data.go.kr/B551011/KorService2';
@@ -86,19 +88,28 @@ async function fetchTourApiDetails(beach) {
   try {
     const keyword = beach.name.includes('·') ? beach.name.split('·')[0] : beach.name;
     const sigunguCode = sigunguCodeMap[beach.city];
+    let items = null;
 
-    if (!sigunguCode) {
-      console.warn(`[TourAPI] ${beach.city}의 시군구 코드를 찾을 수 없습니다.`);
-      return { overview: '지역 코드가 없어 관광 정보를 조회할 수 없습니다.', address: '', mainImage: '', images: [] };
+    // 1단계: 시/군/구 코드로 정밀 검색
+    if (sigunguCode) {
+      console.log(`[TourAPI] 1차 검색 (정밀): areaCode=32, sigunguCode=${sigunguCode}, keyword="${keyword}"`);
+      const searchRes = await axios.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
+        params: { ...commonParams, areaCode: 32, sigunguCode, keyword, contentTypeId: 12, arrange: 'A' }
+      });
+      items = searchRes.data.response?.body?.items?.item;
     }
-    
-    const searchRes = await axios.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
-      params: { ...commonParams, areaCode: 32, sigunguCode, keyword, contentTypeId: 12, arrange: 'A' }
-    });
-    
-    let foundItem = null;
-    const items = searchRes.data.response?.body?.items?.item;
 
+    // 2단계: 1차 검색 실패 시, 강원도 전체에서 광역 검색 (Fallback)
+    if (!items) {
+      console.warn(`[TourAPI] 1차 검색 실패. 2차 검색 (광역) 실행: keyword="${keyword}"`);
+      const searchRes = await axios.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
+        params: { ...commonParams, areaCode: 32, keyword, contentTypeId: 12, arrange: 'A' }
+      });
+      items = searchRes.data.response?.body?.items?.item;
+    }
+
+    // 3단계: 검색된 결과에서 최적의 항목 필터링
+    let foundItem = null;
     if (items) {
       const allItems = Array.isArray(items) ? items : [items];
       foundItem = 
@@ -108,14 +119,16 @@ async function fetchTourApiDetails(beach) {
     }
 
     if (!foundItem) {
-      console.warn(`[TourAPI] 검색 실패: "${beach.name}"에 해당하는 해수욕장 정보를 찾지 못했습니다.`);
+      console.warn(`[TourAPI] 최종 검색 실패: "${beach.name}" 정보를 찾지 못했습니다.`);
       return { overview: '관련 관광 정보를 찾을 수 없습니다.', address: '', mainImage: '', images: [] };
     }
     
     const { contentid } = foundItem;
+    console.log(`[TourAPI] 최종 선택: ${foundItem.title} (contentId: ${contentid})`);
 
+    // 4단계: [수정] 상세 정보 조회 시 불필요한 파라미터 모두 제거
     const commonInfoPromise = axios.get(`${KOR_SERVICE_URL}/detailCommon2`, {
-      params: { ...commonParams, contentId: contentid, overviewYN: 'Y', addrinfoYN: 'Y', defaultYN: 'Y', firstImageYN: 'Y' }
+      params: { ...commonParams, contentId: contentid }
     });
     const imageInfoPromise = axios.get(`${KOR_SERVICE_URL}/detailImage2`, {
       params: { ...commonParams, contentId: contentid, imageYN: 'Y' }
