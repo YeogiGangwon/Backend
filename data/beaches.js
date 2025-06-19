@@ -2,6 +2,7 @@ module.exports = [
   {
     id: 'namhangjin',
     name: '남항진',
+    city: '강릉시',
     location: {
       lat: 37.7515,
       lon: 128.896
@@ -11,6 +12,7 @@ module.exports = [
   {
     id: 'gangmun',
     name: '강문',
+    city: '강릉시',
     location: {
       lat: 37.757,
       lon: 128.899
@@ -20,6 +22,7 @@ module.exports = [
   {
     id: 'gyeongpo',
     name: '경포',
+    city: '강릉시',
     location: {
       lat: 37.797,
       lon: 128.912
@@ -29,6 +32,7 @@ module.exports = [
   {
     id: 'sodol',
     name: '소돌',
+    city: '강릉시',
     location: {
       lat: 37.821,
       lon: 128.93
@@ -38,6 +42,7 @@ module.exports = [
   {
     id: 'yeomjeon',
     name: '염전',
+    city: '강릉시',
     location: {
       lat: 37.823,
       lon: 128.94
@@ -47,6 +52,7 @@ module.exports = [
   {
     id: 'yeongjin',
     name: '영진',
+    city: '강릉시',
     location: {
       lat: 37.83,
       lon: 128.95
@@ -56,6 +62,7 @@ module.exports = [
   {
     id: 'jeongdongjin',
     name: '정동진',
+    city: '강릉시',
     location: {
       lat: 37.78,
       lon: 128.93
@@ -65,6 +72,7 @@ module.exports = [
   {
     id: 'gonghyeonjin',
     name: '공현진',
+    city: '고성군',
     location: {
       lat: 38.38,
       lon: 128.46
@@ -74,6 +82,7 @@ module.exports = [
   {
     id: 'gyoam',
     name: '교암',
+    city: '고성군',
     location: {
       lat: 38.39,
       lon: 128.47
@@ -83,6 +92,7 @@ module.exports = [
   {
     id: 'bongpo',
     name: '봉포',
+    city: '속초시',
     location: {
       lat: 38.21,
       lon: 128.59
@@ -92,6 +102,7 @@ module.exports = [
   {
     id: 'chodo',
     name: '초도',
+    city: '고성군',
     location: {
       lat: 38.4,
       lon: 128.48
@@ -101,6 +112,7 @@ module.exports = [
   {
     id: 'yeongrang',
     name: '영랑',
+    city: '속초시',
     location: {
       lat: 38.21,
       lon: 128.59
@@ -110,6 +122,7 @@ module.exports = [
   {
     id: 'hamyangbang',
     name: '하맹방',
+    city: '삼척시',
     location: {
       lat: 37.45,
       lon: 129.17
@@ -119,6 +132,7 @@ module.exports = [
   {
     id: 'wonpyeong',
     name: '원평',
+    city: '삼척시',
     location: {
       lat: 37.46,
       lon: 129.18
@@ -128,6 +142,7 @@ module.exports = [
   {
     id: 'munam_chogok',
     name: '문암·초곡',
+    city: '삼척시',
     location: {
       lat: 37.47,
       lon: 129.19
