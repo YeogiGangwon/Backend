@@ -3,8 +3,8 @@ uvicorn[standard]==0.15.0
 numpy==1.23.5
 opencv-python>=4.1.1
 --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.13.1+cpu
-torchvision==0.14.1+cpu
+torch==1.13.1
+torchvision==0.14.1
 importlib-metadata>=4.6.0
 yolov5==7.0.13
 PyYAML>=5.3.1

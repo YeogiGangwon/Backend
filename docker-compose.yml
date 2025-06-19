@@ -10,6 +10,7 @@ services:
     env_file: .env
     environment:
       - PYTHON_API_URL=http://python-api:8000/congestion
+      - MONGO_URI=mongodb://root:sdsqkqh!@mongo:27017/admin?authSource=admin
     depends_on:
       - mongo
     ports:
@@ -26,8 +27,8 @@ services:
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: securepassword  
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: sdsqkqh!
     restart: unless-stopped
 
   python-api:
