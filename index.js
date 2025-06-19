@@ -3,13 +3,9 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 
 dotenv.config();
+
+// 데이터베이스 연결
 connectDB();
-
-const placeRoutes = require('./routes/place.routes');
-app.use('/api/places', placeRoutes);
-
-const itineraryPlaceRoutes = require('./routes/itineraryPlace.routes');
-app.use('/api/itinerary-places', itineraryPlaceRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

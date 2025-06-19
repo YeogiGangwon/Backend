@@ -4,7 +4,7 @@ const Favorite = require('../models/favorite.model');
 exports.addFavorite = async (req, res) => {
   try {
     const { place_id } = req.body;
-    const user_id = req.user.id;
+    const user_id = req.userId;
 
     const exists = await Favorite.findOne({ user_id, place_id });
     if (exists) return res.status(409).json({ message: '이미 즐겨찾기됨' });
@@ -22,7 +22,7 @@ exports.addFavorite = async (req, res) => {
 // 즐겨찾기 목록 조회
 exports.getFavorites = async (req, res) => {
   try {
-    const user_id = req.user.id;
+    const user_id = req.userId;
 
     const favorites = await Favorite.find({ user_id }).populate('place_id');
     res.status(200).json(favorites);
@@ -36,7 +36,7 @@ exports.getFavorites = async (req, res) => {
 exports.deleteFavorite = async (req, res) => {
   try {
     const { id } = req.params;
-    const user_id = req.user.id;
+    const user_id = req.userId;
 
     const result = await Favorite.findOneAndDelete({ _id: id, user_id });
     if (!result) return res.status(404).json({ message: '해당 즐겨찾기를 찾을 수 없음' });
