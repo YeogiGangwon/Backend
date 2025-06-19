@@ -15,7 +15,7 @@ function calculateWeatherScore(forecast) {
   if (sky === '1') score += 30; // 맑으면 30점
   else if (sky === '3') score += 15; // 구름 많으면 15점
 
-  if (tmp >= 22 && tmp <= 32) score += 30; // 22~32도 사이면 30점
+  if (tmp >= 23 && tmp <= 32) score += 30; // 23~32도 사이면 30점
 
   return score;
 }
