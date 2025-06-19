@@ -29,6 +29,8 @@ function calculateWeatherScore(forecast) {
 }
 
 exports.getRankedBeachRecommendations = async () => {
+  console.log('[추천 서비스] 해수욕장 추천 요청 시작');
+  
   const latestCongestionData = await Congestion.aggregate([
     { $sort: { timestamp: -1 } },
     { $group: { _id: '$cameraId', latest: { $first: '$$ROOT' } } },
@@ -36,39 +38,81 @@ exports.getRankedBeachRecommendations = async () => {
   ]);
   
   const congestionMap = new Map(latestCongestionData.map(c => [c.cameraId, c]));
+  console.log(`[추천 서비스] 혼잡도 데이터 로드 완료: ${congestionMap.size}개`);
 
   const recommendationPromises = beaches.map(async (beach) => {
-    const forecast = await weatherService.fetchShortTermForecast(beach.location.lat, beach.location.lon);
-    const weatherScore = calculateWeatherScore(forecast);
+    try {
+      const forecast = await weatherService.fetchShortTermForecast(beach.location.lat, beach.location.lon);
+      const weatherScore = calculateWeatherScore(forecast);
 
-    const cctvId = beachCctvMap[beach.name];
-    const congestionInfo = congestionMap.get(cctvId);
-    const congestionScore = congestionInfo ? 100 - congestionInfo.score : 50;
+      const cctvId = beachCctvMap[beach.name];
+      const congestionInfo = congestionMap.get(cctvId);
+      const congestionScore = congestionInfo ? 100 - congestionInfo.score : 50;
 
-    const totalScore = Math.round(weatherScore * 0.6 + congestionScore * 0.4);
+      const totalScore = Math.round(weatherScore * 0.6 + congestionScore * 0.4);
 
-    const tourApiDetails = await fetchTourApiDetails(beach);
+      // 개발 환경에서는 Tour API 호출을 건너뛰고 기본값 사용
+      let tourApiDetails;
+      if (process.env.NODE_ENV === 'development' || !process.env.TOUR_API_KEY) {
+        console.log(`[추천 서비스] ${beach.name} - Tour API 호출 건너뜀 (개발 모드)`);
+        tourApiDetails = {
+          overview: `${beach.name}에 대한 상세 정보입니다.`,
+          address: beach.city || '',
+          mainImage: '',
+          images: []
+        };
+      } else {
+        tourApiDetails = await fetchTourApiDetails(beach);
+      }
 
-    return {
-      name: beach.name,
-      description: beach.description,
-      totalScore,
-      weather: {
-        score: weatherScore,
-        temp: `${forecast.find(f => f.category === 'TMP')?.fcstValue}°C`,
-        sky: forecast.find(f => f.category === 'SKY')?.fcstValue === '1' ? '맑음' : '구름많음/흐림'
-      },
-      congestion: {
-        score: congestionScore,
-        level: congestionInfo?.level || '정보없음',
-        personCount: congestionInfo?.personCount
-      },
-      tourInfo: tourApiDetails
-    };
+      return {
+        name: beach.name,
+        description: beach.description,
+        totalScore,
+        weather: {
+          score: weatherScore,
+          temp: `${forecast.find(f => f.category === 'TMP')?.fcstValue}°C`,
+          sky: forecast.find(f => f.category === 'SKY')?.fcstValue === '1' ? '맑음' : '구름많음/흐림'
+        },
+        congestion: {
+          score: congestionScore,
+          level: congestionInfo?.level || '정보없음',
+          personCount: congestionInfo?.personCount
+        },
+        tourInfo: tourApiDetails
+      };
+    } catch (error) {
+      console.error(`[추천 서비스] ${beach.name} 처리 중 에러:`, error.message);
+      // 에러 발생 시에도 기본 데이터 반환
+      return {
+        name: beach.name,
+        description: beach.description,
+        totalScore: 50, // 기본 점수
+        weather: {
+          score: 50,
+          temp: '20°C',
+          sky: '정보없음'
+        },
+        congestion: {
+          score: 50,
+          level: '정보없음',
+          personCount: null
+        },
+        tourInfo: {
+          overview: '정보를 불러올 수 없습니다.',
+          address: '',
+          mainImage: '',
+          images: []
+        }
+      };
+    }
   });
 
+  console.log('[추천 서비스] 모든 해수욕장 데이터 처리 시작');
   const recommendations = await Promise.all(recommendationPromises);
   recommendations.sort((a, b) => b.totalScore - a.totalScore);
+  console.log(`[추천 서비스] 추천 완료: ${recommendations.length}개 해수욕장 정렬됨`);
+  
   return recommendations;
 };
 
@@ -85,6 +129,11 @@ async function fetchTourApiDetails(beach) {
     _type: 'json'
   };
 
+  // axios 인스턴스에 타임아웃 설정
+  const axiosInstance = axios.create({
+    timeout: 10000 // 10초 타임아웃
+  });
+
   try {
     const keyword = beach.name.includes('·') ? beach.name.split('·')[0] : beach.name;
     const sigunguCode = sigunguCodeMap[beach.city];
@@ -93,7 +142,7 @@ async function fetchTourApiDetails(beach) {
     // 1단계: 시/군/구 코드로 정밀 검색
     if (sigunguCode) {
       console.log(`[TourAPI] 1차 검색 (정밀): areaCode=32, sigunguCode=${sigunguCode}, keyword="${keyword}"`);
-      const searchRes = await axios.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
+      const searchRes = await axiosInstance.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
         params: { ...commonParams, areaCode: 32, sigunguCode, keyword, contentTypeId: 12, arrange: 'A' }
       });
       items = searchRes.data.response?.body?.items?.item;
@@ -102,7 +151,7 @@ async function fetchTourApiDetails(beach) {
     // 2단계: 1차 검색 실패 시, 강원도 전체에서 광역 검색 (Fallback)
     if (!items) {
       console.warn(`[TourAPI] 1차 검색 실패. 2차 검색 (광역) 실행: keyword="${keyword}"`);
-      const searchRes = await axios.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
+      const searchRes = await axiosInstance.get(`${KOR_SERVICE_URL}/searchKeyword2`, {
         params: { ...commonParams, areaCode: 32, keyword, contentTypeId: 12, arrange: 'A' }
       });
       items = searchRes.data.response?.body?.items?.item;
@@ -126,11 +175,11 @@ async function fetchTourApiDetails(beach) {
     const { contentid } = foundItem;
     console.log(`[TourAPI] 최종 선택: ${foundItem.title} (contentId: ${contentid})`);
 
-    // 4단계: [수정] 상세 정보 조회 시 불필요한 파라미터 모두 제거
-    const commonInfoPromise = axios.get(`${KOR_SERVICE_URL}/detailCommon2`, {
+    // 4단계: 상세 정보 조회 (타임아웃 적용)
+    const commonInfoPromise = axiosInstance.get(`${KOR_SERVICE_URL}/detailCommon2`, {
       params: { ...commonParams, contentId: contentid }
     });
-    const imageInfoPromise = axios.get(`${KOR_SERVICE_URL}/detailImage2`, {
+    const imageInfoPromise = axiosInstance.get(`${KOR_SERVICE_URL}/detailImage2`, {
       params: { ...commonParams, contentId: contentid, imageYN: 'Y' }
     });
     
